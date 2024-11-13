@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 // Controls player movement and rotation.
@@ -6,13 +5,11 @@ public class VacumController : MonoBehaviour
 {
     public float speed = 5.0f; // Set player's movement speed.
     public float rotationSpeed = 120.0f; // Set player's rotation speed.
+    public float jumpForce = 3.0f; // Force applied when jumping
 
     private Rigidbody rb; // Reference to player's Rigidbody.
-    public float jumpForce = 3.0f;
-    private bool isColliding = false;
-    public float maxTiltAngle = 45f; // Sudut maksimum untuk mendeteksi terbalik
+    private bool isFlipped = false; // Flag to check if vacuum is flipped
 
-    public float rotationResetSpeed = 2f; // Kecepatan rotasi untuk kembali ke orientasi awal
     // Start is called before the first frame update
     private void Start()
     {
@@ -21,52 +18,56 @@ public class VacumController : MonoBehaviour
 
     // Update is called once per frame
     void Update()
-    {       
-        
-            if (Input.GetKeyDown(KeyCode.E))  { // Memeriksa apakah tombol E ditekan
-            rb.AddForce(-transform.up * 3f, ForceMode.VelocityChange); //Transform untuk menggerakkan player sesuai local objek
+    {
+        // Cek apakah vacuum terbalik
+        if (Vector3.Dot(transform.up, Vector3.down) > 0.5f)
+        {
+            isFlipped = true; // Jika vacuum terbalik
         }
-            if (Input.GetButtonDown("Jump")) {// Memeriksa apakah tombol spasi ditekan
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);//Vector3 untuk menggerakkan player sesuai global objek
+        else
+        {
+            isFlipped = false; // Jika vacuum dalam posisi normal
+        }
+
+        // Periksa jika tombol E ditekan untuk aksi lainnya (misalnya vacuum berfungsi)
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            rb.AddForce(-transform.up * 3f, ForceMode.VelocityChange); // Vacuum melakukan aksi (misalnya menarik)
+        }
+
+        // Periksa jika tombol Spasi ditekan untuk mengembalikan posisi vacuum
+        if (Input.GetButtonDown("Jump") && isFlipped)
+        {
+            // Lakukan loncatan dan rotasi balik untuk memperbaiki posisi vacuum
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
+            rb.AddTorque(Vector3.right * 90f, ForceMode.VelocityChange); // Putar ke posisi semula
         }
     }
-
 
     // Handle physics-based movement and rotation.
     private void FixedUpdate()
     {
-        // Cek apakah player terbalik berdasarkan orientasi sumbu forward
-        if (Vector3.Dot(transform.forward, Vector3.down) > 0.5f)
+        // Jika vacuum terbalik, hentikan gerakan
+        if (isFlipped)
         {
-            if (Input.GetButtonDown("Jump")) {// Memeriksa apakah tombol spasi ditekan
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);//Vector3 untuk menggerakkan player sesuai global objek
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-
-            // Tentukan rotasi target dengan mempertahankan rotasi x -90
-            Quaternion targetRotation = Quaternion.Euler(-90, transform.eulerAngles.y, 0);
-        
-            // Atur rotasi menuju target secara bertahap
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationResetSpeed * Time.fixedDeltaTime);
-            }
-            // Hentikan pergerakan jika player terbalik
             return;
         }
 
         // Gerakan player (hanya jika tidak terbalik)
         float moveVertical = Input.GetAxis("Vertical");
-        Vector3 movement = -transform.up * moveVertical * speed * Time.fixedDeltaTime;
+        Vector3 movement = transform.forward * moveVertical * speed * Time.fixedDeltaTime;
         rb.MovePosition(rb.position + movement);
 
         // Rotate player based on horizontal input.
         float turn = Input.GetAxis("Horizontal") * rotationSpeed * Time.fixedDeltaTime;
-        Quaternion turnRotation = Quaternion.Euler(0f, turn, turn);
+        Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
         rb.MoveRotation(rb.rotation * turnRotation);
 
-        // Raycast ke arah depan player untuk mendeteksi dinding
+        // Raycast untuk mendeteksi tabrakan di depan
         RaycastHit hit;
         float rayDistance = 0.5f; // Sesuaikan jaraknya
 
-        if (Physics.Raycast(transform.position, -transform.up, out hit, rayDistance))
+        if (Physics.Raycast(transform.position, transform.forward, out hit, rayDistance))
         {
             // Jika ada tabrakan dan mencoba bergerak maju, batalkan gerakan
             if (moveVertical > 0)
@@ -76,34 +77,5 @@ public class VacumController : MonoBehaviour
         }
 
         rb.MovePosition(rb.position + movement);
-
     }
-
-    private void OnCollisionStay(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            isColliding = true;
-        }
-    }
-
-    private void OnCollisionExit(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            isColliding = false;
-        }
-    }
-
-    void JumpAndFlip()
-    {
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-
-        // Tentukan rotasi target dengan mempertahankan rotasi x -90
-        Quaternion targetRotation = Quaternion.Euler(-90, transform.eulerAngles.y, 0);
-        
-        // Atur rotasi menuju target secara bertahap
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationResetSpeed * Time.fixedDeltaTime);
-    }
-
 }
