@@ -19,6 +19,7 @@ public class SweeperController : MonoBehaviour
         // Mengambil input untuk akselerasi dan belokan dari tombol WASD
         horizontalInput = Input.GetAxis("Horizontal"); // A dan D untuk belok
         verticalInput = Input.GetAxis("Vertical"); // W untuk maju, S untuk mundur
+        
     }
 
     private void FixedUpdate()

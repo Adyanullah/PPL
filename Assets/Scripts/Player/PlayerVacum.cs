@@ -29,18 +29,15 @@ public class VacumController : MonoBehaviour
             isFlipped = false; // Jika vacuum dalam posisi normal
         }
 
-        // Periksa jika tombol E ditekan untuk aksi lainnya (misalnya vacuum berfungsi)
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            rb.AddForce(-transform.up * 3f, ForceMode.VelocityChange); // Vacuum melakukan aksi (misalnya menarik)
-        }
-
         // Periksa jika tombol Spasi ditekan untuk mengembalikan posisi vacuum
         if (Input.GetButtonDown("Jump") && isFlipped)
         {
-            // Lakukan loncatan dan rotasi balik untuk memperbaiki posisi vacuum
+            // Lakukan loncatan untuk membantu posisi vacuum kembali
             rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
-            rb.AddTorque(Vector3.right * 90f, ForceMode.VelocityChange); // Putar ke posisi semula
+            // Set rotasi x dan z menjadi 0
+            Quaternion uprightRotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+            rb.MoveRotation(uprightRotation);
+
         }
     }
 
